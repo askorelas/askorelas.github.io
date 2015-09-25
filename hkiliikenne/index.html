@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Traffic</title>
+    
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    
+    <!-- jQuery -->
+    <script src="jquery-1.11.3.min.js"></script>
+    
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+    <script src="LeafletHtmlIcon.js"></script>
+
+    <!-- C3 -->
+    <script src="d3.js"></script>
+    <script src="c3.js"></script>
+    <link rel="stylesheet" href="c3.css" />
+   
+    <script src="data4.js"></script>
+    <script src="modernizr-custom.js"></script>
+
+    <!-- detect browsers that don't support vh units, and set map height by javascript -->
+    <script>
+      $(document).ready(function(){
+        $(".no-cssvhunit #map").css("height", $(window).height());
+      });
+    </script>
+    
+    
+    
+    <style type="text/css">
+      html, body{
+        padding: 0;
+        margin: 0;
+        font-family: Arial;
+        background-color: black;
+        height: 100%;
+      }
+      #map{
+        width:100%; 
+        position: inherit !important;
+        height: 900px;
+        height: 100vh;
+      }
+      
+      .counter{
+        line-height: 100%;
+      }
+    
+      .inbound{
+        color: rgba(255,255,255,0.7);
+      }
+      
+      .outbound{
+        color: #dd0000;
+      }
+      
+      .leaflet-popup-content .c3-tooltip-container{
+        top: 75px !important;
+      }
+      
+      .chart text {
+        fill: rgba(255,255,255,0.7);
+      }
+      
+      /* C3 overrides */
+      .c3 path, .c3 line{
+        stroke: rgba(255,255,255,0.7);
+      }
+      
+      .c3-tooltip{
+        box-shadow: 1px 1px 2px 2px rgba(0,0,0,0.6);
+      }
+      .c3-tooltip td{
+        color: black;
+      }
+      
+      .c3-tooltip td.name span{
+        border: 1px solid black;
+      }
+      
+      .c3-tooltip tr{
+        border: none;
+      }
+      
+      #total-chart g.c3-chart{
+        cursor: pointer;
+      }
+      
+      .c3-xgrid-focus{
+        display: none;
+      }
+      
+      #player-button{
+        background-size: 100px 100px;
+        background-repeat: no-repeat;
+        opacity: 0.85;
+      }
+      #player-button:hover{
+        opacity: 1;
+      }
+      .play{
+        background-image:url('video-play-xxl.png');
+      }
+      .pause{
+        background-image:url('video-pause-xxl.png');
+      }
+      
+      .leaflet-container{
+        background: black;
+      }
+      .leaflet-popup-content-wrapper, .leaflet-popup-tip{
+        background: rgba(0,0,0,0.5);
+        box-shadow: none;
+        color: white;
+      }
+      
+      .leaflet-popup-content-wrapper .c3-axis-x g.tick{
+        display: none;
+      }
+      
+      .leaflet-popup{
+        padding-top: 60px;
+      }
+      
+      .leaflet-popup a.leaflet-popup-close-button{
+        top: 60px;
+      }
+      
+      #header{
+        position: fixed !important; 
+        top: 0; 
+        z-index:10; 
+        width: 100%;
+        background-color: transparent;
+        background-image: -webkit-gradient(
+          linear, left top, left bottom, from(rgba(0,0,0,0.8)),
+          to(rgba(0,0,0,0))
+        );
+        color: white;
+      }
+      
+      #footer{
+        position: fixed !important; 
+        bottom: 0; 
+        z-index:100; 
+        width: 100%; 
+        background-color: rgba(0,0,0,0.5); 
+        color: white;
+      }
+      
+      #header h1{
+        float: left;
+        font-size: 2em;
+        margin: 20px 0 0 0;
+      }
+      #clock{
+        float: right;
+        font-size: 2em;
+        margin: 20px 0 0 0;
+      }
+      
+      #year-select{
+        margin: 20px 0 0 20px;
+        font-size: 2em;
+        color: white;
+        background-color: rgba(0,0,0,0);
+        border: 1px solid rgba(255,255,255,0.5);
+      }
+      #year-select option{
+        color: black;
+        background-color: white;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <div id="app">
+      
+      <div id="footer">
+        <div id="chart-wrapper" class="chart" style=" width:75%; margin-left:auto; margin-right:auto;">
+          <!--<h3>Liikenne Helsingin niemellä <span class="inbound">sisään</span> ja <span class="outbound">ulos</span></h3>-->
+          <div style="width: 100px; float: left;margin-top: 25px;">
+            <div id="player-button" class="play" onclick="togglePlayer()" style="width: 100px; height: 100px; cursor: pointer;"></div>
+          </div>
+          <div id="total-chart" style="margin-left: 100px;height: 150px; z-index:100;"></div>
+        </div>
+      </div>
+      
+      <div id="map"></div> 
+      <div id="header">
+        <div id="header-wrapper" style=" width:75%; margin-left:auto; margin-right:auto;">
+          <select id="year-select">
+            <option selected="selected">2014</option>
+            <option>2013</option>
+            <option>2012</option>
+            <option>2011</option>
+          </select>
+          <h1>Liikenne Helsingin niemellä</h1>
+          <div id="clock">00:00</div>
+        </div>
+      <div>
+    </div>
+    <script type='text/javascript'>
+      
+        //=======================
+        // Interpolation function
+        
+        var interpolate = function(start, end, t, timespan, logging){
+          var diff = end-start;
+          var k = t / timespan;
+          var nextVal = start + Math.round(diff*k);
+          if(logging){
+            console.log(start+", "+end+", "+t+", "+timespan+", "+nextVal);
+          }
+          return nextVal;
+        };
+
+        
+        //================================
+        // Function to clear all intervals
+        
+        var clearAllIntervals = function(){
+          if(hourIntervalId!=undefined){
+            clearInterval(hourIntervalId);
+          }
+          if(minuteIntervalIds != undefined && minuteIntervalIds.length>0){
+            minuteIntervalIds.forEach(function(id){
+              clearInterval(id);
+            });
+          }
+        }
+    
+        //Set up map
+        var mapDiv = 'map';
+        var tileLayerUrl = 'http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+        var map = L.map(mapDiv).setView([60.1684692,24.9377372], 14);
+        var tileLayer = L.tileLayer(tileLayerUrl, { });
+        this.map.addLayer(tileLayer);
+
+        
+        //==============================
+        // Animation parameters
+        var minuteTime = 100;
+        var hourTime = minuteTime * 60;
+        var moments = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+        var tick = 0;
+        var data = trafficData["2014"];
+        
+        var hourIntervalId = undefined;
+        var minuteIntervalIds = [];
+        var progressMinutes = undefined;
+        var prevProgressLineTimeElapsed = 0;
+        
+        //============================
+        // Year selection
+        $("#year-select").bind('change',function(e){
+          var selectedYear = $(this).val();
+          data = trafficData[selectedYear];
+          tick = 0;
+          prevProgressLineTimeElapsed = 0;
+          clearAllIntervals();
+          if(isPlaying){
+            runAnimation();
+          }
+          $(".c3").each(function(){
+            var chartId = $(this).attr('id').replace("-chart","");
+            
+            if(chartId=='total'){
+              renderChart(chartId, true); //Has progress line
+              $("#total-chart g.c3-chart").bind('click', function(e){onChartClick(e);});
+            }else{
+              renderChart(chartId); //Doesn't have a progress line
+            }
+          });
+        });
+           
+        
+        //=============================
+        // Location names
+        var locationNames = [
+          'lauttasaarensilta',
+          'lapinlahdensilta',
+          'merikannontie',
+          'mechelininkatu',
+          'runeberginkatu',
+          'toolonkatu',
+          'mannerheimintie',
+          'pitkasilta',
+          'hakaniemensilta'
+        ];
+        
+        var displayNames = {
+          lauttasaarensilta: 'Lauttasaaren silta',
+          lapinlahdensilta: 'Lapinlahden silta',
+          merikannontie: 'Merikannontie',
+          mechelininkatu: 'Mechelininkatu',
+          runeberginkatu: 'Runeberginkatu',
+          toolonkatu: 'Töölönkatu',
+          mannerheimintie: 'Mannerheimintie',
+          pitkasilta: 'Pitkäsilta',
+          hakaniemensilta: 'Hakaniemen silta'
+        }
+        
+        //=============================
+        // Coords
+        
+        var coords = {
+          lauttasaarensilta:{
+            lat: 60.16238533,
+            lon: 24.89961514
+          },
+          lapinlahdensilta:{
+            lat: 60.16709052, 
+            lon: 24.90235664
+          },
+          merikannontie:{
+            lat: 60.17802129, 
+            lon: 24.91338728
+          },
+          mechelininkatu:{
+            lat: 60.17628291,
+            lon: 24.9178601
+          },
+          runeberginkatu:{
+            lat: 60.17676126,
+            lon: 24.92227315
+          },
+          toolonkatu:{
+            lat: 60.17684576,
+            lon: 24.92888534
+          },
+          mannerheimintie:{
+            lat: 60.17768081,
+            lon: 24.92951416
+          },
+          pitkasilta:{
+            lat: 60.17621822,
+            lon: 24.95020087
+          },
+          hakaniemensilta:{
+            lat: 60.17691184,
+            lon: 24.9574068
+          }
+        }
+        
+        
+        //============================
+        // Chart rendering
+        //============================
+        var progressLine;
+        var xData = moments.slice(); //Get a copy, unshift changes original array
+        xData.unshift('x');
+        
+        var renderChart = function(name, hasProgressLine){
+          var inboundData = data[name].inbound.hourly.slice();
+          inboundData.unshift('Sisään');
+
+          var outboundData = data[name].outbound.hourly.slice();
+          //Negate outbound data
+          for(var i=0; i<outboundData.length; i++) {
+            outboundData[i] *= -1;
+          }
+          outboundData.unshift('Ulos');
+          
+          var chart = c3.generate(
+          {
+            bindto: '#'+name+'-chart',
+            onrendered: function(){
+              if(hasProgressLine){
+                $("#progressLine").remove();
+                var svg = d3.select("#total-chart svg").select('g').select('.c3-chart-lines');
+                progressLine = svg.append("line")
+                                   .attr("x1", 1)
+                                   .attr("x2", 1)
+                                   .attr("y1", 0)
+                                   .attr("y2", 116)
+                                   .attr("id", "progressLine");
+              }
+            },
+            data: {
+              x: 'x',
+              columns: [
+                  xData,
+                  inboundData,
+                  outboundData
+              ],
+              colors: {
+                diff: '#ffffff',
+                Sisään: 'rgba(255,255,255,0.7)',
+                Ulos: '#dd0000'
+              },
+              axes: {
+                Sisään: 'y',
+                Ulos: 'y'
+              },
+              type: 'bar',
+              groups: [
+                ['Sisään', 'Ulos']
+              ]
+            },
+            bar: {
+              width:{
+                ratio: 0.95
+              }
+            },
+            grid: {
+              y: {
+                lines: [{value:0}]
+              }
+            },
+            axis: {
+              x: {
+                type: 'category'
+              }
+            },
+            legend: {
+              show: false
+            }
+          });
+        }
+      
+        renderChart('total', true);
+
+        
+        //==================================================================
+        // Function to reposition the timeline to the hour that was clicked
+        //
+        var onChartClick = function(e){
+          console.log("ASD");
+          tick = parseInt(e.target.__data__.x); //x coordinate of clicked rectangle
+          progressMinutes = undefined;
+          
+          var chartWidth = $("#total-chart g.c3-chart")[0].getBoundingClientRect().width;
+          var hourLength = chartWidth / 24;
+
+          var x = tick * hourLength;
+          progressLine.attr('x1', x)
+                      .attr('x2', x);
+          if(!isPlaying){
+            togglePlayer();
+          }else{
+            clearAllIntervals();
+            runAnimation();
+          }
+        };
+        
+        $("#total-chart g.c3-chart").bind('click', function(e){onChartClick(e);});
+          
+        //=============================
+        // Counters
+        //=============================
+        var counterIndex = 0 //Work around a bug in leaflet / html markers.
+        var counterHeight = 24;
+        var counterGroup = L.layerGroup([]).addTo(map);
+        
+        //===============================================
+        //Get events from when the counter layer is added
+        
+        map.on('popupopen', function(e){
+        
+          if(e.popup.options != undefined){
+            if(locationNames.indexOf(e.popup.options.title) > -1){
+              var locationName = e.popup.options.title;
+              renderChart(locationName);
+            }
+          }
+        });
+        
+        //===============================================
+        // Function to create counter markers
+        
+        var createCounter = function(name){
+          var styleStr ="position:relative; top:"+((counterIndex * -counterHeight)-5)+"px; left: 10px;";
+          counterIndex++;
+          var counterLocation = new L.LatLng(coords[name].lat, coords[name].lon); 
+          var counterCheckpointLocation = new L.LatLng(coords[name].lat, coords[name].lon); 
+          var counterHtmlIcon = new L.HtmlIcon({
+              html : "<div id='"+name+"Counter' class='counter' style='"+styleStr+"'><div class='inbound'>0</div><div class='outbound'>0</div></div>"
+              
+          });
+          //Counter
+          var counterMarker = new L.Marker(counterLocation, {icon: counterHtmlIcon, title: name});
+          counterGroup.addLayer(counterMarker);
+          
+          //Pin with popup
+          var counterCheckpointMarker = new L.Marker(counterCheckpointLocation).bindPopup("<div id='"+name+"Popup'><h3>"+displayNames[name]+"</h3><div class='chart' id='"+name+"-chart' style='width: 300px;height: 100px; z-index:100;position:inherit;'></div></div>", {minWidth: 300, title: name});
+          map.addLayer(counterCheckpointMarker);
+          if(name == 'lapinlahdensilta'){
+            counterCheckpointMarker.openPopup();
+          }
+        }
+        
+        //Render a counter for each location
+        locationNames.forEach(function(name){
+          createCounter(name);
+        });
+        
+        
+        
+        //==============================
+        // Animated car counter
+
+        var isPlaying = false;
+        var isResuming = false;
+        var started = false;
+        
+        var togglePlayer = function(){
+          isPlaying = !isPlaying;
+          
+          //Was playing, but was paused. 
+          if(!isPlaying && hourIntervalId != undefined){
+            tick--;
+            clearAllIntervals();
+          }
+          
+          if(isPlaying && started){
+            isResuming = true;
+            minuteIntervalIds = [];
+          }
+          if(isPlaying){
+            runAnimation();
+          }
+
+          started = true;
+          $("#player-button").toggleClass("play");
+          $("#player-button").toggleClass("pause");
+        };
+ 
+        
+        var runAnimation = function() {
+          if(!isResuming){
+            progressMinutes = undefined;
+          }
+          
+          //Animate progress line and clock
+          
+          var progressLineIntervalId = setInterval(function(){
+            if(isPlaying && tick < moments.length + 1){
+              var minutesElapsed = (progressMinutes != undefined) ?  progressMinutes : 0
+              if(minutesElapsed == hourTime){
+                //clearInterval(progressLineIntervalId);
+              }else{
+                //Progress line
+                var chartWidth = $("#total-chart g.c3-chart")[0].getBoundingClientRect().width;
+                var hourLength = chartWidth / 24;
+                
+                var timeElapsed = (tick-1)*hourTime + minutesElapsed;
+                console.log(timeElapsed+", "+prevProgressLineTimeElapsed);
+                
+                if(prevProgressLineTimeElapsed > timeElapsed){
+                  timeElapsed = prevProgressLineTimeElapsed; //Eliminate some jitter caused by a setInterval race condition
+                }
+                prevProgressLineTimeElapsed = timeElapsed;
+                
+                var totalTime = 24*hourTime;
+                
+                var x = interpolate(0, chartWidth, timeElapsed, totalTime);
+                progressLine.attr('x1', x)
+                            .attr('x2', x);
+                            
+                //Clock
+                var h = ((tick-1)<10)? "0"+(tick-1) : tick-1;
+                var m = (progressMinutes == undefined) ? "00" : ((progressMinutes / minuteTime)<10)? "0"+progressMinutes / minuteTime : progressMinutes / minuteTime;
+                $("#clock").html(h+":"+m);
+              }
+            }
+          }, minuteTime);
+          minuteIntervalIds.push(progressLineIntervalId);
+
+          //Animates tickers
+          
+          if(tick >= moments.length){
+            $("#clock").html("24:00");
+          }else{
+            
+            
+            if(isPlaying){
+              //Animates one hour
+              var duration = (progressMinutes != undefined) ?  progressMinutes: 0;
+              var intervalId = setInterval(function(){
+                
+                if(duration == hourTime){
+                  clearInterval(intervalId);
+                  duration = 0;
+                  progressMinutes = 0;
+                  
+                }else{  
+                  duration=duration+minuteTime;
+                  progressMinutes = duration;
+                  
+                  locationNames.forEach(function(locationId){
+                    var currIn = (tick>0) ? data[locationId].inbound.cumul[tick-1] : 0;
+                    var currOut = (tick>0) ? data[locationId].outbound.cumul[tick-1] : 0;
+                    var nextCumulIn = data[locationId].inbound.cumul[tick];
+                    var nextCumulOut = data[locationId].outbound.cumul[tick];
+                    
+                    $("#"+locationId+"Counter .inbound").html(
+                      interpolate(currIn, nextCumulIn, duration, hourTime)
+                    );  
+                    $("#"+locationId+"Counter .outbound").html(
+                      interpolate(currOut, nextCumulOut, duration, hourTime)
+                    );
+                  }); 
+                }
+              } , minuteTime);
+              minuteIntervalIds.push(intervalId);  
+            }
+          }
+            
+          
+          if(isResuming && isPlaying){
+            tick++;
+            hourIntervalId = setTimeout(runAnimation, (hourTime - progressMinutes));
+            isResuming = false;
+          }else if(isPlaying){
+            tick++;
+            hourIntervalId = setTimeout(runAnimation, hourTime);
+          }
+          
+        };
+          
+
+    </script>
+  </body>
+</html>
