@@ -1,14 +1,124 @@
 <html>
 <head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  
+  <title>Data visualizations - Asko Relas</title>
   <style type="text/css">
     body{
-      font-size: 1.5em;
-      line-height: 1.5em;
+      line-height: 1.25em;
+      font-color: #666;
+      font-family: "Arial";
+      background-color: #ddd;
     }
+    
+    a{
+      text-decoration: none;
+      color: black;
+    }
+    a img{
+      border: none;
+    }
+    
+    h1{
+      margin-top: 30px;
+      margin-bottom: 45px;
+    }
+    
+    h2{
+      margin-top: 0;
+    }
+    
+    p{
+      font-size: 
+    }
+    
+    .content-wrapper{
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .row{
+      clear: both;
+    }
+    
+    .picture, .description{
+      width: 47.5%;
+      margin-bottom: 30px;
+    }
+    
+    .picture{
+      float: left;
+    }
+    
+    .picture img{
+      width: 100%;
+    }
+    
+    .description{
+      float: right;
+      margin-left: 5%;
+    }
+    
+    @media screen and (max-width: 767px) {
+      .picture, .description{
+        width: 100%;
+        float: none;
+        font-size: 0.75em;
+      }
+      
+      .picture{
+        margin-bottom: 15px;
+      }
+      
+      .description{
+        margin-bottom: 30px;
+      }
+    }
+   
   </style>
 </head>
 <body>
-  <a href="/hkiliikenne">Helsingin niemen liikenne</a><br/>
-  <a href="/hsvaalikone">HS Vaalikone 2015</a>
+  <div class="content-wrapper">
+    <h1>Datavisualisaatioita</h1>
+    <div class="row">
+      <div class="picture">
+        <a href="/hkiliikenne">
+          <img src="hkiliikenne.jpg" alt="Helsingin niemen liikenne"/>
+        </a>
+      </div>
+      <div class="description">
+        <a href="/hkiliikenne">
+          <h2>Helsingin niemen liikenne</h2>
+          <p>
+            Ajoneuvojen (henkilöautojen, pakettiautojen, kuorma-autojen, rekka-autojen, linja-autojen, moottoripyörien) sekä raitiovaunujen liikennemäärät Helsingin niemen rajoilla vuosina 2011 - 2014.
+          </p>
+        </a>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="picture">
+        <a href="/hsvaalikone">
+          <img src="hsvaalikone.jpg" alt="Helsingin niemen liikenne"/>
+        </a>
+      </div>
+      <div class="description">
+        <a href="/hsvaalikone">
+          <h2>HS Vaalikone 2015 - Ehdokasparvi</h2>
+          <p>
+            Ehdokasparvi on visualisaatio eduskuntavaaliehdokkaiden antamista HS:n vaalikonevastauksista. Visualisaation tarkoituksena on tutkia ja havainnollistaa ehdokkaiden vastausten perusteella: 
+            <ol>
+              <li>Löytyykö eduskuntavaaliehdokkaiden joukosta selkeät puolueklusterit</li>
+              <li>Löytyykö puoluerajojen sisällä poikkeavia kantoja</li>
+              <li>Löytyykö puolueen lisäksi muita demografisia tekijöitä, jotka korreloivat ehdokkaan vastausten kanssa</li>
+              <li>Ketkä ehdokkaat ovat keskenään samnlaisia, tai toisaalta erilaisia</li>
+            </ol>
+          </p>
+        </a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
