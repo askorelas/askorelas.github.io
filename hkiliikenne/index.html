@@ -1,28 +1,32 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Traffic</title>
+    <title>Liikenne Helsingin niemellä 2011 - 2014</title>
     
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    
+    <!--[if lt IE 9]>
+      <script type="text/javascript">
+        alert("Only version 9 and newer Internet Explorer versions are supported.");
+      </script>
+    <![endif]-->
     
     <!-- jQuery -->
     <script src="jquery-1.11.3.min.js"></script>
     
     <!-- Leaflet -->
-    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
-    <script src="LeafletHtmlIcon.js"></script>
+    <link rel="stylesheet" href="leaflet.css" />
+    <script src="leaflet.js"></script>
 
     <!-- C3 -->
     <script src="d3.js"></script>
     <script src="c3.js"></script>
     <link rel="stylesheet" href="c3.css" />
    
-    <script src="data4.js"></script>
+    <script src="animationData.js"></script>
     <script src="modernizr-custom.js"></script>
 
-    <!-- detect browsers that don't support vh units, and set map height by javascript -->
     <script>
       $(document).ready(function(){
         $(".no-cssvhunit #map").css("height", $(window).height());
@@ -130,6 +134,11 @@
         top: 60px;
       }
       
+      .leaflet-div-icon{
+        background-color: transparent;
+        border: none;
+      }
+      
       #header{
         position: fixed !important; 
         top: 0; 
@@ -140,15 +149,6 @@
           linear, left top, left bottom, from(rgba(0,0,0,0.8)),
           to(rgba(0,0,0,0))
         );
-        color: white;
-      }
-      
-      #footer{
-        position: fixed !important; 
-        bottom: 0; 
-        z-index:100; 
-        width: 100%; 
-        background-color: rgba(0,0,0,0.5); 
         color: white;
       }
       
@@ -174,19 +174,32 @@
         color: black;
         background-color: white;
       }
+      
+      #footer{
+        position: fixed !important; 
+        bottom: 0; 
+        z-index:100; 
+        width: 100%; 
+        background-color: rgba(0,0,0,0.5); 
+        color: white;
+      }
+   
+      #total-chart{
+        margin-left: 100px;
+        height: 150px; 
+        z-index:100; 
+      }
     </style>
   </head>
   <body>
     
     <div id="app">
-      
       <div id="footer">
         <div id="chart-wrapper" class="chart" style=" width:75%; margin-left:auto; margin-right:auto;">
-          <!--<h3>Liikenne Helsingin niemellä <span class="inbound">sisään</span> ja <span class="outbound">ulos</span></h3>-->
           <div style="width: 100px; float: left;margin-top: 25px;">
             <div id="player-button" class="play" onclick="togglePlayer()" style="width: 100px; height: 100px; cursor: pointer;"></div>
           </div>
-          <div id="total-chart" style="margin-left: 100px;height: 150px; z-index:100;"></div>
+          <div id="total-chart"></div>
         </div>
       </div>
       
@@ -205,6 +218,33 @@
       <div>
     </div>
     <script type='text/javascript'>
+        //===============================
+        // requestAnimationFrame polyfill
+        
+        (function() {
+          var lastTime = 0;
+          var vendors = ['ms', 'moz', 'webkit', 'o'];
+          for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+              window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+              window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                         || window[vendors[x]+'CancelRequestAnimationFrame'];
+          }
+       
+          if (!window.requestAnimationFrame)
+              window.requestAnimationFrame = function(callback, element) {
+                  var currTime = new Date().getTime();
+                  var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                  var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+                    timeToCall);
+                  lastTime = currTime + timeToCall;
+                  return id;
+              };
+       
+          if (!window.cancelAnimationFrame)
+              window.cancelAnimationFrame = function(id) {
+                  clearTimeout(id);
+              };
+        }());
       
         //=======================
         // Interpolation function
@@ -219,20 +259,6 @@
           return nextVal;
         };
 
-        
-        //================================
-        // Function to clear all intervals
-        
-        var clearAllIntervals = function(){
-          if(hourIntervalId!=undefined){
-            clearInterval(hourIntervalId);
-          }
-          if(minuteIntervalIds != undefined && minuteIntervalIds.length>0){
-            minuteIntervalIds.forEach(function(id){
-              clearInterval(id);
-            });
-          }
-        }
     
         //Set up map
         var mapDiv = 'map';
@@ -244,27 +270,24 @@
         
         //==============================
         // Animation parameters
-        var minuteTime = 100;
-        var hourTime = minuteTime * 60;
-        var moments = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
-        var tick = 0;
-        var data = trafficData["2014"];
         
-        var hourIntervalId = undefined;
-        var minuteIntervalIds = [];
-        var progressMinutes = undefined;
-        var prevProgressLineTimeElapsed = 0;
+        var animationLength = 40000; //milliseconds
+        var moments = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+        var data = trafficData["2014"];
+
         
         //============================
         // Year selection
         $("#year-select").bind('change',function(e){
           var selectedYear = $(this).val();
           data = trafficData[selectedYear];
-          tick = 0;
-          prevProgressLineTimeElapsed = 0;
-          clearAllIntervals();
+          
+          //Reset values
+          animationTime = 0;
+          $(".counter .inbound, .counter .outbound").html("0");
+          $("#clock").html("00:00");
           if(isPlaying){
-            runAnimation();
+            animate();
           }
           $(".c3").each(function(){
             var chartId = $(this).attr('id').replace("-chart","");
@@ -352,7 +375,7 @@
         // Chart rendering
         //============================
         var progressLine;
-        var xData = moments.slice(); //Get a copy, unshift changes original array
+        var xData = moments.slice(); //Get a copy. Unshift changes original array
         xData.unshift('x');
         
         var renderChart = function(name, hasProgressLine){
@@ -430,38 +453,23 @@
         // Function to reposition the timeline to the hour that was clicked
         //
         var onChartClick = function(e){
-          console.log("ASD");
-          tick = parseInt(e.target.__data__.x); //x coordinate of clicked rectangle
-          progressMinutes = undefined;
+          hour = parseInt(e.target.__data__.x); //x coordinate of clicked rectangle
           
-          var chartWidth = $("#total-chart g.c3-chart")[0].getBoundingClientRect().width;
-          var hourLength = chartWidth / 24;
-
-          var x = tick * hourLength;
-          progressLine.attr('x1', x)
-                      .attr('x2', x);
+          animationTime = (hour / 24) * animationLength;
+          previousTimestamp = undefined;
+          
           if(!isPlaying){
             togglePlayer();
-          }else{
-            clearAllIntervals();
-            runAnimation();
           }
         };
         
         $("#total-chart g.c3-chart").bind('click', function(e){onChartClick(e);});
           
-        //=============================
-        // Counters
-        //=============================
-        var counterIndex = 0 //Work around a bug in leaflet / html markers.
-        var counterHeight = 24;
-        var counterGroup = L.layerGroup([]).addTo(map);
         
         //===============================================
         //Get events from when the counter layer is added
         
-        map.on('popupopen', function(e){
-        
+        map.on('popupopen', function(e){ 
           if(e.popup.options != undefined){
             if(locationNames.indexOf(e.popup.options.title) > -1){
               var locationName = e.popup.options.title;
@@ -473,14 +481,14 @@
         //===============================================
         // Function to create counter markers
         
+        var counterGroup = L.layerGroup([]).addTo(map);
         var createCounter = function(name){
-          var styleStr ="position:relative; top:"+((counterIndex * -counterHeight)-5)+"px; left: 10px;";
-          counterIndex++;
+          //var styleStr ="position:relative; top:"+((counterIndex * -counterHeight)-5)+"px; left: 10px;";
+          var styleStr = "position:relative;top:7px;left:4px;";
           var counterLocation = new L.LatLng(coords[name].lat, coords[name].lon); 
           var counterCheckpointLocation = new L.LatLng(coords[name].lat, coords[name].lon); 
-          var counterHtmlIcon = new L.HtmlIcon({
+          var counterHtmlIcon = new L.divIcon({
               html : "<div id='"+name+"Counter' class='counter' style='"+styleStr+"'><div class='inbound'>0</div><div class='outbound'>0</div></div>"
-              
           });
           //Counter
           var counterMarker = new L.Marker(counterLocation, {icon: counterHtmlIcon, title: name});
@@ -505,124 +513,82 @@
         // Animated car counter
 
         var isPlaying = false;
-        var isResuming = false;
-        var started = false;
         
         var togglePlayer = function(){
           isPlaying = !isPlaying;
-          
-          //Was playing, but was paused. 
-          if(!isPlaying && hourIntervalId != undefined){
-            tick--;
-            clearAllIntervals();
-          }
-          
-          if(isPlaying && started){
-            isResuming = true;
-            minuteIntervalIds = [];
-          }
+
           if(isPlaying){
-            runAnimation();
+            animate();
           }
 
-          started = true;
           $("#player-button").toggleClass("play");
           $("#player-button").toggleClass("pause");
         };
  
+        var animationTime = 0;
         
-        var runAnimation = function() {
-          if(!isResuming){
-            progressMinutes = undefined;
+        var previousTimestamp;
+        var animate = function() {
+          var currentTimestamp = Date.now();
+ 
+          var delta = (previousTimestamp == undefined) ? 0 : currentTimestamp - previousTimestamp;
+          //While the animation is playing
+          if(isPlaying){
+            previousTimestamp = currentTimestamp;
+          }else{ //Animation was paused. Set prev timestamp as undefined so the pause duration won't be counted to next delta
+            previousTimestamp = undefined;
           }
-          
-          //Animate progress line and clock
-          
-          var progressLineIntervalId = setInterval(function(){
-            if(isPlaying && tick < moments.length + 1){
-              var minutesElapsed = (progressMinutes != undefined) ?  progressMinutes : 0
-              if(minutesElapsed == hourTime){
-                //clearInterval(progressLineIntervalId);
-              }else{
-                //Progress line
-                var chartWidth = $("#total-chart g.c3-chart")[0].getBoundingClientRect().width;
-                var hourLength = chartWidth / 24;
-                
-                var timeElapsed = (tick-1)*hourTime + minutesElapsed;
-                console.log(timeElapsed+", "+prevProgressLineTimeElapsed);
-                
-                if(prevProgressLineTimeElapsed > timeElapsed){
-                  timeElapsed = prevProgressLineTimeElapsed; //Eliminate some jitter caused by a setInterval race condition
-                }
-                prevProgressLineTimeElapsed = timeElapsed;
-                
-                var totalTime = 24*hourTime;
-                
-                var x = interpolate(0, chartWidth, timeElapsed, totalTime);
-                progressLine.attr('x1', x)
-                            .attr('x2', x);
-                            
-                //Clock
-                var h = ((tick-1)<10)? "0"+(tick-1) : tick-1;
-                var m = (progressMinutes == undefined) ? "00" : ((progressMinutes / minuteTime)<10)? "0"+progressMinutes / minuteTime : progressMinutes / minuteTime;
-                $("#clock").html(h+":"+m);
-              }
-            }
-          }, minuteTime);
-          minuteIntervalIds.push(progressLineIntervalId);
 
-          //Animates tickers
+          animationTime += delta;
+
+          var hours = Math.floor((animationTime / animationLength)*24);
+          var minutes = Math.floor((((animationTime / animationLength)*24) - hours)*60);
           
-          if(tick >= moments.length){
+          if(hours >= 24){
             $("#clock").html("24:00");
+            animationTime = 0; //Reset animation
+            previousTimestamp = undefined;
+            togglePlayer();
           }else{
-            
-            
-            if(isPlaying){
-              //Animates one hour
-              var duration = (progressMinutes != undefined) ?  progressMinutes: 0;
-              var intervalId = setInterval(function(){
-                
-                if(duration == hourTime){
-                  clearInterval(intervalId);
-                  duration = 0;
-                  progressMinutes = 0;
-                  
-                }else{  
-                  duration=duration+minuteTime;
-                  progressMinutes = duration;
-                  
-                  locationNames.forEach(function(locationId){
-                    var currIn = (tick>0) ? data[locationId].inbound.cumul[tick-1] : 0;
-                    var currOut = (tick>0) ? data[locationId].outbound.cumul[tick-1] : 0;
-                    var nextCumulIn = data[locationId].inbound.cumul[tick];
-                    var nextCumulOut = data[locationId].outbound.cumul[tick];
-                    
-                    $("#"+locationId+"Counter .inbound").html(
-                      interpolate(currIn, nextCumulIn, duration, hourTime)
-                    );  
-                    $("#"+locationId+"Counter .outbound").html(
-                      interpolate(currOut, nextCumulOut, duration, hourTime)
-                    );
-                  }); 
-                }
-              } , minuteTime);
-              minuteIntervalIds.push(intervalId);  
-            }
+            animateProgressLine(animationTime);
+            animateClock(hours, minutes);
+            animateCounters(hours, minutes);
           }
             
-          
-          if(isResuming && isPlaying){
-            tick++;
-            hourIntervalId = setTimeout(runAnimation, (hourTime - progressMinutes));
-            isResuming = false;
-          }else if(isPlaying){
-            tick++;
-            hourIntervalId = setTimeout(runAnimation, hourTime);
+          if(isPlaying){
+            requestAnimationFrame(animate);
           }
-          
         };
           
+        var animateProgressLine = function(animationTime){
+          var chartWidth = $("#total-chart g.c3-chart")[0].getBoundingClientRect().width;
+          var animationPosition = (animationTime / animationLength) * chartWidth;
+        
+          progressLine.attr('x1', animationPosition)
+                      .attr('x2', animationPosition);
+        };
+        
+        var animateClock = function(hours, minutes){
+          var h = (hours<10)? "0"+hours : hours;
+          var m = (minutes<10)? "0"+minutes : minutes;
+          $("#clock").html(h+":"+m);
+        };
+        
+        var animateCounters = function(hours, minutes){
+          locationNames.forEach(function(locationId){
+            var currIn = (hours>0) ? data[locationId].inbound.cumul[hours-1] : 0;
+            var currOut = (hours>0) ? data[locationId].outbound.cumul[hours-1] : 0;
+            var nextCumulIn = data[locationId].inbound.cumul[hours];
+            var nextCumulOut = data[locationId].outbound.cumul[hours];
+            
+            $("#"+locationId+"Counter .inbound").html(
+              interpolate(currIn, nextCumulIn, minutes, 60)
+            );  
+            $("#"+locationId+"Counter .outbound").html(
+              interpolate(currOut, nextCumulOut, minutes, 60)
+            );
+          }); 
+        }
 
     </script>
   </body>
