@@ -25,14 +25,6 @@
     <link rel="stylesheet" href="c3.css" />
    
     <script src="animationData.js"></script>
-    <script src="modernizr-custom.js"></script>
-
-    <script>
-      $(document).ready(function(){
-        $(".no-cssvhunit #map").css("height", $(window).height());
-      });
-    </script>
-    
     
     
     <style type="text/css">
@@ -42,12 +34,18 @@
         font-family: Arial;
         background-color: black;
         height: 100%;
+        overflow: hidden;
+      }
+      
+      #app{
+        height: 100%;
       }
       #map{
         width:100%; 
+        
         position: inherit !important;
         height: 900px;
-        height: 100vh;
+        height: 100%;
       }
       
       .counter{
@@ -98,23 +96,7 @@
         display: none;
       }
       
-      #player-button{
-        width: 100px; 
-        height: 100px; 
-        background-size: 100px 100px;
-        background-repeat: no-repeat;
-        opacity: 0.85;
-        cursor: pointer;
-      }
-      #player-button:hover{
-        opacity: 1;
-      }
-      .play{
-        background-image:url('video-play-xxl.png');
-      }
-      .pause{
-        background-image:url('video-pause-xxl.png');
-      }
+      
       
       .leaflet-container{
         background: black;
@@ -143,7 +125,7 @@
       }
       
       #header{
-        position: fixed !important; 
+        position: absolute; 
         top: 0; 
         z-index:10; 
         width: 100%;
@@ -166,20 +148,20 @@
         font-size: 2em;
         margin: 20px 0 0 0;
       }
-      #clock{
+      #header .clock{
         float: right;
         font-size: 2em;
         margin: 20px 0 0 0;
       }
       
-      #year-select{
+      #header .year-select{
         margin: 20px 0 0 20px;
         font-size: 2em;
         color: white;
         background-color: rgba(0,0,0,0);
         border: 1px solid rgba(255,255,255,0.5);
       }
-      #year-select option{
+      #header .year-select option{
         color: black;
         background-color: white;
       }
@@ -192,6 +174,14 @@
         background-color: rgba(0,0,0,0.5); 
         color: white;
       }
+      
+      #footer-controls  .year-select{
+        display: none;
+      }
+   
+      #footer-controls .clock{
+        display: none;
+      }
    
       #total-chart{
         margin-left: 100px;
@@ -199,36 +189,108 @@
         z-index:100; 
       }
       
+      .player-button{
+      
+      }
+      .player-button:hover{
+        opacity: 1;
+        background-repeat: no-repeat;
+        opacity: 0.85;
+        cursor: pointer;
+      }
+      
+      #chart-wrapper .player-button{
+        width: 100px; 
+        height: 100px; 
+        background-size: 100px 100px;
+        margin-top: 25px;
+      }
+      
+      #footer-controls .player-button{
+        display: none;
+      }
+      
+      .play{
+        background-image:url('video-play-xxl.png');
+      }
+      .pause{
+        background-image:url('video-pause-xxl.png');
+      }
+      
+      @media screen and (max-width: 1023px) {
+      
+        #header-wrapper{
+          width: 90%;
+        }
+        
+        #chart-wrapper .player-button{
+          width: 75x; 
+          height: 75px; 
+          background-size: 75px 75px;
+          background-repeat: no-repeat;
+          margin-top: 35px;
+        }
+        
+        .leaflet-control-zoom{
+          display: none;
+        }
+      }
       
       @media screen and (max-width: 767px) {
-        #header-wrapper{
-          width: 80%;
-        }
-        
+
         #header h1{
           font-size: 1.25em;
-          width: 100px;
+          display: block;
+          width: 100%;
           margin-top: 0;
         }
         
-        #year-select{
-          margin-top: 0;
+        #header .year-select{
+          display: none;
         }
         
-        #player-button{
-          width: 50px; 
-          height: 50px; 
-          background-size: 50px 50px;
-          background-repeat: no-repeat;
-          display:none;
+        #header .clock{
+          display: none;
+        }
+        
+        #chart-wrapper .player-button{
+          display: none;
+        }
+        
+        #footer-controls{
+          /*display: none;*/
+        }
+        
+        #footer-controls .player-button{
+          width: 25px; 
+          height: 25px; 
+          background-size: 25px 25px;
+          margin: 10px;
+          display: inline-block;
+          float: left;
+        }
+        
+        #footer-controls .year-select{
+          display: inline;
+          float: left;
+          margin: 10px 5px 5px 15px;
+          font-size: 15px;
+        }
+        
+        #footer-controls .clock{
+          float: right;
+          margin: 10px 10px 0 0;
+          display: inline;
         }
         
         #chart-wrapper{
           width: 100%;
+          clear: both;
         }
         
         #total-chart{
           margin-left: 0;
+          height: 100px;
         }
         
         .leaflet-popup-content{
@@ -236,43 +298,49 @@
         }
       }
       
-      @media screen and (max-width: 1024px) {
-        #player-button{
-          width: 75x; 
-          height: 75px; 
-          background-size: 75px 75px;
-          background-repeat: no-repeat;
-          margin-top: 35px;
-        }
-      }
+      
     </style>
   </head>
-  <body>
+  <body style="overflow: hidden;" >
     
     <div id="app">
+    
       <div id="footer">
-        <div id="chart-wrapper" class="chart">
-          <div style="float: left;">
-            <div id="player-button" class="play" onclick="togglePlayer()"></div>
-          </div>
-          <div id="total-chart"></div>
-        </div>
-      </div>
-      
-      <div id="map"></div> 
-      <div id="header">
-        <div id="header-wrapper">
-          <select id="year-select">
+        <div id="footer-controls">
+          <div class="player-button play" onclick="togglePlayer()"></div>
+          <select class="year-select">
             <option selected="selected">2014</option>
             <option>2013</option>
             <option>2012</option>
             <option>2011</option>
           </select>
+          <div class="clock">00:00</div>
+        </div>
+        <div id="chart-wrapper" class="chart">
+          <div style="float: left;">
+            <div class="player-button play" onclick="togglePlayer()"></div>
+          </div>
+          <div id="total-chart"></div>
+        </div>
+      </div>
+      
+      <div id="map" style="width: 100%;"></div> 
+      
+      <div id="header">
+        <div id="header-wrapper">
           <h1>Liikenne Helsingin niemellä</h1>
-          <div id="clock">00:00</div>
+          <select class="year-select">
+            <option selected="selected">2014</option>
+            <option>2013</option>
+            <option>2012</option>
+            <option>2011</option>
+          </select>
+          
+          <div class="clock">00:00</div>
         </div>
       <div>
     </div>
+    
     <script type='text/javascript'>
         //===============================
         // requestAnimationFrame polyfill
@@ -306,9 +374,12 @@
         // Interpolation function
         
         var interpolate = function(start, end, t, timespan, logging){
+          var nextVal = start + Math.round((end-start)*(t/timespan));
+          /*
           var diff = end-start;
           var k = t / timespan;
           var nextVal = start + Math.round(diff*k);
+          */
           if(logging){
             console.log(start+", "+end+", "+t+", "+timespan+", "+nextVal);
           }
@@ -318,6 +389,7 @@
     
         //Set up map
         var mapDiv = 'map';
+        console.log($(window).width());
         var tileLayerUrl = 'http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
         var zoom = ($(window).width() < 768) ? 12 : ($(window).width() < 1024) ? 13 : 14;
         var map = L.map(mapDiv).setView([60.1684692,24.9377372], zoom);
@@ -335,14 +407,14 @@
         
         //============================
         // Year selection
-        $("#year-select").bind('change',function(e){
+        $(".year-select").bind('change',function(e){
           var selectedYear = $(this).val();
           data = trafficData[selectedYear];
           
           //Reset values
           animationTime = 0;
           $(".counter .inbound, .counter .outbound").html("0");
-          $("#clock").html("00:00");
+          $(".clock").html("00:00");
           if(isPlaying){
             animate();
           }
@@ -582,8 +654,8 @@
             animate();
           }
 
-          $("#player-button").toggleClass("play");
-          $("#player-button").toggleClass("pause");
+          $(".player-button").toggleClass("play");
+          $(".player-button").toggleClass("pause");
         };
  
         var animationTime = 0;
@@ -606,7 +678,7 @@
           var minutes = Math.floor((((animationTime / animationLength)*24) - hours)*60);
           
           if(hours >= 24){
-            $("#clock").html("24:00");
+            $(".clock").html("24:00");
             animationTime = 0; //Reset animation
             previousTimestamp = undefined;
             togglePlayer();
@@ -632,7 +704,7 @@
         var animateClock = function(hours, minutes){
           var h = (hours<10)? "0"+hours : hours;
           var m = (minutes<10)? "0"+minutes : minutes;
-          $("#clock").html(h+":"+m);
+          $(".clock").html(h+":"+m);
         };
         
         var animateCounters = function(hours, minutes){
