@@ -37,6 +37,18 @@
         overflow: hidden;
       }
       
+      a{
+        color: rgb(43, 130, 203);
+      }
+      
+      p{
+        margin-top: 0;
+      }
+      
+      ul{
+        list-style: none;
+      }
+      
       #app{
         height: 100%;
       }
@@ -53,7 +65,8 @@
       }
     
       .inbound{
-        color: rgba(255,255,255,0.7);
+        /*color: rgba(255,255,255,0.7);*/
+        color: rgb(255,255,255);
       }
       
       .outbound{
@@ -137,8 +150,14 @@
         color: white;
       }
       
-      #header-wrapper, #chart-wrapper{
+      #header-wrapper{
         width:75%; 
+        margin-left:auto; 
+        margin-right:auto;
+      }
+      
+      #chart-wrapper{
+        width:95%; 
         margin-left:auto; 
         margin-right:auto;
       }
@@ -215,6 +234,37 @@
       }
       .pause{
         background-image:url('video-pause-xxl.png');
+      }
+      
+      #info-panel{
+        z-index: 200000;
+        position: relative;
+        float: right;
+        width: 400px;
+        background-color: rgba(0,0,0,0.5);
+        color: rgba(255,255,255,0.6);
+        padding: 10px 20px 20px 10px;
+        margin-top: 70px;
+        font-size: 0.85em;
+        line-height: 1.2em;
+      }
+      
+      #info-panel p{
+        margin-left: 25px;
+      }
+      
+      a.close-info-panel{
+        font-size: 20px;
+        cursor: pointer;
+      }
+      
+      a.open-info-panel{
+        font-size: 15px;
+        display: inline-block;
+        border: 1px solid rgb(43, 130, 203);
+        border-radius: 20px;
+        padding: 1px 7px 1px 7px;
+        cursor: pointer;
       }
       
       @media screen and (max-width: 1023px) {
@@ -303,7 +353,29 @@
     </style>
   </head>
   <body style="overflow: hidden;" >
-    
+    <div id="info-panel" class="open">
+      <a class="close-info-panel">×</a>
+      <a class="open-info-panel" style="display: none;">i</a>
+      <div class="info-panel-content">
+        <p>
+          Visualisaatio kuvaa kaikkien ajoneuvojen (henkilöautojen, pakettiautojen, kuorma-autojen, rekka-autojen, linja-autojen, moottoripyörien) sekä raitiovaunujen yhteenlasketut liikennemäärät Helsingin niemen rajoilla vuosina 2011 - 2014.
+        </p>
+        <p>
+          <span class="inbound">Valkoinen</span> väri kuvaa niemelle sisään suuntautuvaa liikennettä, ja <span class="outbound">punainen</span> ulospäin suuntautuvaa.
+        </p>
+        <p>
+          Visualisaation tekijä on <a href="https://fi.linkedin.com/in/askorelas">Asko Relas</a>. 
+        </p>
+        <ul>
+          <li><a href="http://twitter.com/AskoRelas">@AskoRelas</a></li>
+          <li><a href="http://twitter.com/talentbaseoy">@talentbaseoy</a></li>
+        </ul>
+        <p>
+          <a href="http://www.hri.fi/fi/dataset/liikennemaarat-helsingissa">Aineiston</a> ylläpitäjä on Helsingin kaupungin kaupunkisuunnitteluvirasto ja alkuperäinen tekijä Helsingin kaupungin kaupunkisuunnitteluvirasto. 
+          Aineisto on ladattu <a href="http://www.hri.fi">Helsinki Region Infoshare</a> palvelusta 23.09.2015 lisenssillä <a href="http://creativecommons.org/licenses/by/4.0/deed.fi">Creative Commons Nimeä 4.0 Kansainvälinen (CC BY 4.0)</a>.
+        </p>
+      </div>
+    </div>
     <div id="app">
     
       <div id="footer">
@@ -343,6 +415,44 @@
     </div>
     
     <script type='text/javascript'>
+        $(document).ready(function(){
+          
+          $(".close-info-panel, .open-info-panel").bind('click', function(){toggleInfoPanel();});
+          
+          var infoPanelClosed = getCookie('infoPanelClosed');
+          console.log("Panel closed: "+infoPanelClosed);
+          if(infoPanelClosed && infoPanelClosed == 'true'){
+            toggleInfoPanel();
+          }
+        });        
+    
+        var toggleInfoPanel = function(){
+          var isOpen = $("#info-panel").hasClass('open');
+          
+          //Close the panel if it's open
+          if(isOpen){
+            $("#info-panel").animate({left: 400});
+            document.cookie="infoPanelClosed=true";
+          }else{
+            $("#info-panel").animate({left: 0});
+            document.cookie="infoPanelClosed=false";
+          }
+          $("#info-panel").toggleClass('open');
+          $(".close-info-panel").toggle();
+          $(".open-info-panel").toggle();
+        };
+    
+        function getCookie(cname) {
+          var name = cname + "=";
+          var ca = document.cookie.split(';');
+          for(var i=0; i<ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1);
+            if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+          }
+          return "";
+        }
+    
         //===============================
         // requestAnimationFrame polyfill
         
@@ -403,6 +513,7 @@
         
         var animationLength = 40000; //milliseconds
         var moments = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+        //var moments = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
         var data = trafficData["2014"];
 
         
