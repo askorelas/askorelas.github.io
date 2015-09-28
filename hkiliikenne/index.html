@@ -237,13 +237,13 @@
       }
       
       #info-panel{
-        z-index: 200000;
+        z-index: 200;
         position: relative;
         float: right;
         width: 400px;
-        background-color: rgba(0,0,0,0.5);
+        background-color: rgba(0,0,0,0.8);
         color: rgba(255,255,255,0.6);
-        padding: 10px 20px 20px 10px;
+        padding: 10px 20px 10px 10px;
         margin-top: 70px;
         font-size: 0.85em;
         line-height: 1.2em;
@@ -347,6 +347,12 @@
         .leaflet-popup-content{
           margin: 0px 10px;
         }
+        
+        #info-panel{
+          margin-top: 40px;
+          width: 300px;
+          background-color: rgba(0,0,0,0.8);
+        }
       }
       
       
@@ -420,7 +426,6 @@
           $(".close-info-panel, .open-info-panel").bind('click', function(){toggleInfoPanel();});
           
           var infoPanelClosed = getCookie('infoPanelClosed');
-          console.log("Panel closed: "+infoPanelClosed);
           if(infoPanelClosed && infoPanelClosed == 'true'){
             toggleInfoPanel();
           }
@@ -431,13 +436,17 @@
           
           //Close the panel if it's open
           if(isOpen){
-            $("#info-panel").animate({left: 400});
+            var slideWidth = $(".info-panel-content").width(); //20px margin right
+            $("#info-panel").animate({left: slideWidth});
+            //$(".info-panel-content").style('display', 'none');
             document.cookie="infoPanelClosed=true";
           }else{
             $("#info-panel").animate({left: 0});
+            //$(".info-panel-content").style('display', 'block');
             document.cookie="infoPanelClosed=false";
           }
           $("#info-panel").toggleClass('open');
+          $(".info-panel-content").slideToggle();
           $(".close-info-panel").toggle();
           $(".open-info-panel").toggle();
         };
@@ -500,7 +509,6 @@
     
         //Set up map
         var mapDiv = 'map';
-        console.log($(window).width());
         var tileLayerUrl = 'http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
         var zoom = ($(window).width() < 768) ? 12 : ($(window).width() < 1024) ? 13 : 14;
         var map = L.map(mapDiv).setView([60.1684692,24.9377372], zoom);
@@ -738,7 +746,6 @@
           //Pin with popup
           var minWidth = 280;
           var maxWidth = $(window).width() * 0.8;
-          console.log($(window).width());
           var counterCheckpointMarker = new L.Marker(counterCheckpointLocation).bindPopup("<div id='"+name+"Popup'><h3>"+displayNames[name]+"</h3><div class='chart' id='"+name+"-chart' style='width: 300px;height: 100px; z-index:100;position:inherit;'></div></div>", {minWidth: minWidth, maxWidth:maxWidth, title: name});
           map.addLayer(counterCheckpointMarker);
           //Open one popup by default, unless we're on a very small screen
