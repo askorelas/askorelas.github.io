@@ -633,9 +633,10 @@
 
           var outboundData = data[name].outbound.hourly.slice();
           //Negate outbound data
+          /*
           for(var i=0; i<outboundData.length; i++) {
             outboundData[i] *= -1;
-          }
+          }*/
           outboundData.unshift('Ulos');
           
           var chart = c3.generate(
@@ -669,14 +670,11 @@
                 Sisään: 'y',
                 Ulos: 'y'
               },
-              type: 'bar',
-              groups: [
-                ['Sisään', 'Ulos']
-              ]
+              type: 'bar'
             },
             bar: {
               width:{
-                ratio: 0.95
+                ratio: 0.8
               }
             },
             grid: {
